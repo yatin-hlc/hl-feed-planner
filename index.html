@@ -68,6 +68,7 @@
   }
   .logo{font-weight:700; font-size:18px; letter-spacing:-.3px; display:flex; align-items:center; gap:8px;}
   .logo svg{width:22px; height:22px;}
+  .ver{font-size:11px; font-weight:600; color:var(--text2); background:var(--tile); padding:2px 7px; border-radius:10px; margin-left:2px;}
   .spacer{flex:1;}
   .seg{display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden;}
   .seg button{
@@ -602,6 +603,27 @@
 <script>
 (function(){
   "use strict";
+  // ─────────────────── Self-update (standalone apps cache the old page) ───────────────────
+  const APP_VERSION = "19";
+  let lastUpdCheck = 0;
+  async function checkAppUpdate(){
+    if(Date.now() - lastUpdCheck < 60000) return; // at most once a minute
+    lastUpdCheck = Date.now();
+    try{
+      const res = await fetch(location.pathname + "?upd=" + Date.now(), {cache:"no-store"});
+      if(!res.ok) return;
+      const txt = await res.text();
+      const m = txt.match(/APP_VERSION\s*=\s*"(\d+)"/);
+      if(m && m[1] !== APP_VERSION){
+        // local data is already saved (IndexedDB) — safe to swap to the new build
+        setTimeout(()=>location.replace(location.pathname + "?v=" + m[1]), 800);
+        try{ document.getElementById("toast").textContent = "Updating app…"; document.getElementById("toast").classList.add("show"); }catch(e){}
+      }
+    }catch(e){ /* offline — try again next time */ }
+  }
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "visible") checkAppUpdate(); });
+  checkAppUpdate();
+
   // ───────────────────────── State ─────────────────────────
   const MAX_PLANNED = 24, MAX_CARO = 20;
   let state = {
