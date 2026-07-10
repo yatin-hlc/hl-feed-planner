@@ -223,6 +223,24 @@
   .tile.dragging{opacity:.35;}
   .empty-feed{padding:50px 20px; text-align:center; color:var(--text2); font-size:14px; line-height:1.7;}
 
+  .bottomnav{
+    position:sticky; bottom:10px; z-index:20; margin:14px 14px 10px;
+    background:rgba(28,28,30,.94); border-radius:36px; padding:13px 22px;
+    display:flex; align-items:center; justify-content:space-between; color:#f5f5f5;
+    box-shadow:0 4px 18px rgba(0,0,0,.45);
+  }
+  [data-theme="light"] .bottomnav{background:rgba(255,255,255,.96); color:#262626; box-shadow:0 4px 18px rgba(0,0,0,.18);}
+  .bottomnav svg{width:24px; height:24px;}
+  .bottomnav .navdot{position:relative; display:flex;}
+  .bottomnav .navdot::after{content:""; position:absolute; right:-4px; bottom:-2px; width:8px; height:8px;
+    border-radius:50%; background:#ff3040;}
+  .navav{position:relative; width:30px; height:30px; display:flex;}
+  .navav .inner{width:100%; height:100%; border-radius:50%; background:var(--tile); display:flex;
+    align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--text2);
+    text-transform:uppercase; overflow:hidden; border:2px solid currentColor;}
+  .navav i{position:absolute; right:-3px; bottom:-1px; width:9px; height:9px; border-radius:50%; background:#ff3040;}
+  .device.desktop .bottomnav{display:none;}
+
   /* ── Feed (scroll) view ── */
   .feedlist{display:none;}
   .frame.layout-feed .grid,.frame.layout-feed .profile,.frame.layout-feed .bio,.frame.layout-feed .gridtabs,.frame.layout-feed .dashcard,.frame.layout-feed .pbtnrow{display:none;}
@@ -366,6 +384,12 @@
     <div class="card">
       <h3>Profile</h3>
       <input id="usernameInput" placeholder="yourhandle" maxlength="30" aria-label="Username">
+      <div class="row"><input id="displayNameInput" placeholder="Display name (e.g. Half Light Coffee Roasters)" maxlength="40" aria-label="Display name"></div>
+      <div class="row">
+        <button class="btn ghost" id="avatarBtn" style="flex:1">Upload profile photo</button>
+        <button class="btn ghost" id="avatarClear" style="flex:0 0 auto" title="Remove profile photo">✕</button>
+      </div>
+      <input type="file" id="avatarFile" accept="image/*" hidden>
       <p class="hint">The grid uses Instagram's current 3:4 tile crop (rolled out in 2025 — the 1:1 square grid no longer exists). Photos are center-cropped to 3:4 exactly like your real profile; the Feed view shows them at 4:5. Best upload format: 4:5 (1080×1350) with key elements centered.</p>
     </div>
 
@@ -514,6 +538,13 @@
         </div>
         <div class="grid" id="grid"></div>
         <div class="feedlist" id="feedlist"></div>
+        <div class="bottomnav">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M3 8h18M9.5 3l3 5M15.5 3l3 5"/><polygon points="10.5 12 15.5 15 10.5 18 10.5 12" fill="currentColor" stroke="none"/></svg>
+          <span class="navdot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          <span class="navav"><span class="inner" id="navAvatar">Y</span><i></i></span>
+        </div>
         <div class="empty-feed" id="emptyFeed">
           Your feed preview will appear here.<br>
           Add planned photos on the left, then fetch or upload your existing posts to compare.
@@ -1343,17 +1374,19 @@
     $("pbA").classList.toggle("follow", !mob);
     $("pbB").textContent = mob ? "Share profile" : "Message";
     $("pbC").style.display = mob ? "none" : "flex";
-    const inner = $("avatarLetter");
+    $("displayNameInput").value = state.settings.displayName || "";
     const av = state.settings.avatarId && images[state.settings.avatarId];
-    if(av){
-      inner.textContent = "";
-      inner.style.backgroundImage = "url(" + av + ")";
-      inner.style.backgroundSize = "cover";
-      inner.style.backgroundPosition = "center";
-    }else{
-      inner.style.backgroundImage = "";
-      inner.textContent = (u[0]||"Y");
-    }
+    [$("avatarLetter"), $("navAvatar")].forEach(inner=>{
+      if(av){
+        inner.textContent = "";
+        inner.style.backgroundImage = "url(" + av + ")";
+        inner.style.backgroundSize = "cover";
+        inner.style.backgroundPosition = "center";
+      }else{
+        inner.style.backgroundImage = "";
+        inner.textContent = (u[0]||"Y");
+      }
+    });
   }
   $("themeBtn").onclick = ()=>{ state.settings.theme = state.settings.theme==="light"?"dark":"light"; applyAll(); scheduleSave(); };
   $("sideBtn").onclick = ()=>{ state.settings.panel = state.settings.panel==="closed" ? "open" : "closed"; applyAll(); scheduleSave(); };
@@ -1362,6 +1395,27 @@
   $("layGrid").onclick = ()=>{ state.settings.layout="grid"; applyAll(); scheduleSave(); };
   $("layFeed").onclick = ()=>{ state.settings.layout="feed"; applyAll(); scheduleSave(); render(); };
   $("usernameInput").addEventListener("input", e=>{ state.settings.username = e.target.value.trim() || "yourhandle"; applyAll(); render(); scheduleSave(); });
+  $("displayNameInput").addEventListener("input", e=>{ state.settings.displayName = e.target.value.trim(); applyAll(); scheduleSave(); });
+  $("avatarBtn").onclick = ()=>$("avatarFile").click();
+  $("avatarFile").addEventListener("change", async ()=>{
+    const f = $("avatarFile").files[0]; $("avatarFile").value = "";
+    if(!f || !f.type.startsWith("image/")) return;
+    try{
+      const data = await compress(f);
+      if(state.settings.avatarId) deleteImage(state.settings.avatarId);
+      const aid = "av" + uid();
+      images[aid] = data; await saveImage(aid, data);
+      state.settings.avatarId = aid;
+      applyAll(); render(); scheduleSave();
+      toast("Profile photo set.");
+    }catch(e){ toast("Couldn't read that image."); }
+  });
+  $("avatarClear").onclick = ()=>{
+    if(!state.settings.avatarId) return;
+    deleteImage(state.settings.avatarId);
+    delete state.settings.avatarId;
+    applyAll(); render(); scheduleSave();
+  };
 
   // ─────────────────── Dropzones & inputs ───────────────────
   function wireDrop(zoneId, inputId, handler){
@@ -1453,45 +1507,66 @@
     // The cover/thumbnail for a video, if the export includes one:
     // 1) an explicit thumbnail field in the JSON, 2) an image file with the same basename as the video
     const zipKeys = Object.keys(zip.files);
-    function coverFileFor(m, uri){
-      const metaUri = m.thumbnail_uri || m.thumbnail
+    function coverFileFor(m, uri, it){
+      let metaUri = m.thumbnail_uri || m.thumbnail
         || (m.media_metadata && m.media_metadata.video_metadata && m.media_metadata.video_metadata.thumbnail_uri)
         || (m.media_metadata && m.media_metadata.thumbnail_uri) || null;
+      if(!metaUri && it && it.media_map_data){
+        for(const key of Object.keys(it.media_map_data)){
+          const u2 = it.media_map_data[key] && it.media_map_data[key].uri;
+          if(u2 && isImg(u2)){ metaUri = u2; break; }
+        }
+      }
       if(metaUri){ const f = findFile(metaUri); if(f) return f; }
-      const base = uri.replace(/\.\w+$/, "");
-      const sib = zipKeys.find(k => (k === base || k.endsWith("/"+base) || k.replace(/\.\w+$/,"").endsWith(base.split("/").pop())) && isImg(k) && k.includes(base.split("/").pop()));
-      return sib ? zip.files[sib] : null;
+      // any image in the zip whose filename contains the video's basename (covers *_cover.jpg patterns)
+      const name = uri.split("/").pop().replace(/\.\w+$/, "");
+      if(name.length >= 7){
+        const sib = zipKeys.find(k => isImg(k) && k.split("/").pop().includes(name));
+        if(sib) return zip.files[sib];
+      }
+      return null;
     }
     let skippedVideo = 0, frameGrabbed = 0, realCovers = 0;
     // Profile: username, display name and profile photo from the export
+    let profileFound = false;
     try{
-      const piName = zipKeys.find(n=>/(^|\/)personal_information\/personal_information\.json$/i.test(n))
-                  || zipKeys.find(n=>/(^|\/)personal_information\.json$/i.test(n));
-      if(piName){
-        const pi = JSON.parse(await zip.files[piName].async("string"));
-        const pu = pi.profile_user && pi.profile_user[0];
-        const smd = pu && pu.string_map_data;
-        if(smd){
-          const uname = smd.Username && smd.Username.value;
-          const dname = smd.Name && smd.Name.value;
-          if(uname) state.settings.username = fixTxt(uname).slice(0,30);
-          if(dname) state.settings.displayName = fixTxt(dname).slice(0,40);
+      const piNames = zipKeys.filter(n=>/personal_information[^/]*\.json$/i.test(n) || /(^|\/)profile\.json$/i.test(n) || /instagram_profile_information\.json$/i.test(n));
+      const getVal = (obj, names)=>{
+        if(!obj) return null;
+        for(const k of Object.keys(obj)){
+          if(names.includes(k.toLowerCase().trim())) return obj[k] && (obj[k].value !== undefined ? obj[k].value : obj[k]);
         }
+        return null;
+      };
+      for(const piName of piNames){
+        let pi; try{ pi = JSON.parse(await zip.files[piName].async("string")); }catch(e){ continue; }
+        const pu = (pi.profile_user && pi.profile_user[0]) || (Array.isArray(pi) && pi[0]) || pi;
+        const smd = pu && (pu.string_map_data || pu.string_map || pu);
+        const uname = getVal(smd, ["username","user name"]);
+        const dname = getVal(smd, ["name","display name","full name"]);
+        if(uname){ state.settings.username = fixTxt(String(uname)).slice(0,30); profileFound = true; }
+        if(dname){ state.settings.displayName = fixTxt(String(dname)).slice(0,40); profileFound = true; }
         const mmd = pu && pu.media_map_data;
-        const ppUri = mmd && mmd["Profile Photo"] && mmd["Profile Photo"].uri;
+        let ppUri = null;
+        if(mmd) for(const k of Object.keys(mmd)){ if(/profile/i.test(k) && mmd[k].uri){ ppUri = mmd[k].uri; break; } }
         let pf = ppUri ? findFile(ppUri) : null;
         if(!pf){
-          const k = zipKeys.find(k=>/profile[_ ]?(photo|pic)/i.test(k) && isImg(k));
+          const k = zipKeys.find(k=>/profile/i.test(k) && isImg(k));
           if(k) pf = zip.files[k];
         }
         if(pf){
-          const avData = await compress(await pf.async("blob"));
-          const aid = state.settings.avatarId || ("av" + uid());
-          images[aid] = avData; await saveImage(aid, avData);
-          state.settings.avatarId = aid;
+          try{
+            const avData = await compress(await pf.async("blob"));
+            const aid = "av" + uid();
+            if(state.settings.avatarId) deleteImage(state.settings.avatarId);
+            images[aid] = avData; await saveImage(aid, avData);
+            state.settings.avatarId = aid;
+            profileFound = true;
+          }catch(e){}
         }
-        applyAll();
+        if(profileFound) break;
       }
+      applyAll();
     }catch(e){ console.error("profile import", e); }
     for(const it of items){
       if(state.existing.length >= 16) break;
@@ -1511,7 +1586,7 @@
           }else if(isVid(uri)){
             hadVideo = true;
             let data = null;
-            const cf = coverFileFor(m, uri);          // 1st + 2nd choice: the real cover from the export
+            const cf = coverFileFor(m, uri, it);      // 1st + 2nd choice: the real cover from the export
             if(cf){
               try{ data = await compress(await cf.async("blob")); realCovers++; }catch(e){ data = null; }
             }
@@ -1531,9 +1606,10 @@
     }
     scheduleSave(); render();
     let msg = "Imported " + state.existing.length + " posts from your export";
-    if(frameGrabbed) msg += " · " + frameGrabbed + " video cover" + (frameGrabbed>1?"s":"") + " not in the export, used a video frame instead (adjust via crop, or replace in the post editor)";
+    if(frameGrabbed) msg += " · " + frameGrabbed + " chosen video cover" + (frameGrabbed>1?"s":"") + " aren't included in Meta's export — used a video frame (use Replace photo in the post editor, or the API fetch for exact covers)";
     if(skippedVideo) msg += " · " + skippedVideo + " post" + (skippedVideo>1?"s":"") + " had no readable media";
-    toast(msg + ".", 6000);
+    if(!profileFound) msg += " · Profile name/photo aren't in this export (only Media was selected) — set them in the Profile card, or re-download including Personal information";
+    toast(msg + ".", 9000);
   }
   wireDrop("dropZip", "fileZip", files=>{ if(files[0]) importExportZip(files[0]); });
 
