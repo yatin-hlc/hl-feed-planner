@@ -604,7 +604,7 @@
 (function(){
   "use strict";
   // ─────────────────── Self-update (standalone apps cache the old page) ───────────────────
-  const APP_VERSION = "19";
+  const APP_VERSION = "20";
   let lastUpdCheck = 0;
   async function checkAppUpdate(){
     if(Date.now() - lastUpdCheck < 60000) return; // at most once a minute
@@ -1386,7 +1386,7 @@
     $("wrap").classList.toggle("side-collapsed", state.settings.panel==="closed");
     $("sideBtn").classList.toggle("on", state.settings.panel!=="closed");
     const u = state.settings.username || "yourhandle";
-    $("usernameInput").value = u;
+    if(document.activeElement !== $("usernameInput")) $("usernameInput").value = u;
     $("topUsername").textContent = state.settings.layout==="feed" ? "Posts" : u;
     $("profUsername").textContent = u;
     const dispName = state.settings.displayName || u.replace(/[._]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
@@ -1396,7 +1396,7 @@
     $("pbA").classList.toggle("follow", !mob);
     $("pbB").textContent = mob ? "Share profile" : "Message";
     $("pbC").style.display = mob ? "none" : "flex";
-    $("displayNameInput").value = state.settings.displayName || "";
+    if(document.activeElement !== $("displayNameInput")) $("displayNameInput").value = state.settings.displayName || "";
     const av = state.settings.avatarId && images[state.settings.avatarId];
     [$("avatarLetter"), $("navAvatar")].forEach(inner=>{
       if(av){
@@ -1417,7 +1417,8 @@
   $("layGrid").onclick = ()=>{ state.settings.layout="grid"; applyAll(); scheduleSave(); };
   $("layFeed").onclick = ()=>{ state.settings.layout="feed"; applyAll(); scheduleSave(); render(); };
   $("usernameInput").addEventListener("input", e=>{ state.settings.username = e.target.value.trim() || "yourhandle"; applyAll(); render(); scheduleSave(); });
-  $("displayNameInput").addEventListener("input", e=>{ state.settings.displayName = e.target.value.trim(); applyAll(); scheduleSave(); });
+  $("displayNameInput").addEventListener("input", e=>{ state.settings.displayName = e.target.value; applyAll(); scheduleSave(); });
+  $("displayNameInput").addEventListener("blur", e=>{ state.settings.displayName = e.target.value.trim(); applyAll(); scheduleSave(); });
   $("avatarBtn").onclick = ()=>$("avatarFile").click();
   $("avatarFile").addEventListener("change", async ()=>{
     const f = $("avatarFile").files[0]; $("avatarFile").value = "";
